@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  clerkId   String   @unique
+  name      String?
+  bio       String?
+  image     String?
+  location  String?
+  website   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  posts    Post[] // one to many relationship with Post model
+  comments Comment[] // one to many relationship with Comment model
+  likes    Like[] // one to many relationship with Like model
+
+  followers Follows[] @relation("following") // followers of the user
+  following Follows[] @relation("follower") // following of the user
+
+  notifications        Notification[] @relation("userNotifications") // notifications created by the user
+  notificationsCreated Notification[] @relation("notificationsCreator") // notifications triggered by the user
+
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  authorId  String
+  content   String?
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade) // cascade delete means that when a user is deleted, all of their posts will be deleted as well
+  comments      Comment[] // one to many relationship with Comment model
+  likes         Like[] // one to many relationship with Like model
+  notifications Notification[] // one to many relationship with Notification model
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  authorId String
+  postId   String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade) // cascade delete means that when a user is deleted, all of their comments will be deleted as well
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade) // cascade delete means that when a post is deleted, all of its comments will be deleted as well
+  notifications Notification[] // one to many relationship with Notification model
+  
+  @@index([authorId, postId]) // composite index on authorId and postId for faster querying
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId String
+  postId String
+  author User   @relation(fields: [userId], references: [id], onDelete: Cascade) // cascade delete means that when a user is deleted, all of their likes will be deleted as well
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade) // cascade delete means that when a post is deleted, all of its likes will be deleted as well
+
+  @@unique([userId, postId]) // ensures that each user can only like a post once
+  @@index([userId, postId]) // composite index on userId and postId for faster querying
+}
+
+model Follows {
+  createdAt DateTime @default(now())
+
+  // Relations
+  followerId  String
+  followingId String
+
+  follower  User    @relation("follower", fields: [followerId], references: [id], onDelete: Cascade) // cascade delete means that when a user is deleted, all of their follows will be deleted as well
+  following User    @relation("following", fields: [followingId], references: [id], onDelete: Cascade) // cascade delete means that when a user is deleted, all of their follows will be deleted as well
+
+
+  @@id([followerId, followingId]) // ensures that each follower can only follow a user once
+  @@index([followerId, followingId]) // composite index on followerId and followingId for faster querying
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  creatorId String
+  type      NotificationType
+  read      Boolean  @default(false)
+  postId    String?
+  commentId String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation("userNotifications", fields: [userId], references: [id], onDelete: Cascade) // cascade delete means that when a user is deleted, all of their notifications will be deleted as well
+  creator   User     @relation("notificationsCreator", fields: [creatorId], references: [id], onDelete: Cascade) // cascade delete means that when a user is deleted, all of their notifications will be deleted as well 
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade) // cascade delete means that when a post is deleted, all of its notifications will be deleted as well
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade) // cascade delete means that when a comment is deleted, all of its notifications will be deleted as well
+  @@index([userId, creatorId]) // composite index on userId and creatorId for faster querying
+}
+
+enum NotificationType {
+  FOLLOW
+  LIKE
+  COMMENT
+}
