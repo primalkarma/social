@@ -1,5 +1,4 @@
 import { currentUser } from "@clerk/nextjs/server";
-import React from "react";
 import ModeToggle from "./ModeToggle";
 import { Button } from "./ui/button";
 import Link from "next/link";
@@ -8,6 +7,7 @@ import { SignInButton, UserButton } from "@clerk/nextjs";
 
 async function DesktopNavbar() {
   const user = await currentUser();
+
   return (
     <div className="hidden md:flex items-center space-x-4">
       <ModeToggle />
