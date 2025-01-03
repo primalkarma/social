@@ -4,7 +4,7 @@ import { useUser } from "@clerk/nextjs";
 import { useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { Avatar } from "./ui/avatar";
-import { AvatarImage } from "@radix-ui/react-avatar";
+import { AvatarImage } from "./ui/avatar";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
 import { ImageIcon, Loader2Icon, SendIcon } from "lucide-react";
@@ -15,16 +15,16 @@ function CreatePost() {
   const { user } = useUser();
   const [content, setContent] = useState("");
   const [imageURL, setImageURL] = useState("");
-  const [loading, setLoading] = useState(false);
+  //const [loading, setLoading] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
 
   const handleSubmit = async () => {
-    if (!content.trim() || !imageURL) return;
+    if (!content.trim() && !imageURL) return;
     setIsPosting(true);
     try {
       const result = await createPost(content, imageURL);
-      if (result.success) {
+      if (result?.success) {
         // reset form
         setContent("");
         setImageURL("");
@@ -44,7 +44,7 @@ function CreatePost() {
       <CardContent className="pt-6">
         <div className="space-y-4">
           <div className="flex space-x-4">
-            <Avatar>
+            <Avatar className="w-10 h-10">
               <AvatarImage src={user?.imageUrl || "/avatar.png"} alt="Avatar" />
             </Avatar>
             <Textarea
